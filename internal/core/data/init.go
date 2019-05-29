@@ -88,8 +88,14 @@ func Retry(params startup.BootParams, wait *sync.WaitGroup, ch chan error) {
 			// Attempt to connect to secrets service. Fall back to local config on failure.
 			if !params.UseLocalSecrets {
 				err = connectAndPollSecrets()
+
+				// Error occurred trying to read remote secrets. Fail fast.
 				if err != nil {
 					ch <- err
+					ch <- fmt.Errorf("could not fetch remote secrets, shutting down")
+					close(ch)
+					wait.Done()
+					return
 				}
 			}
 
